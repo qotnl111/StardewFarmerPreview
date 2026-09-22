@@ -394,7 +394,7 @@
 
 <div id="topbar">
   <h1>🌾 스타듀밸리 농부 모션 뷰어</h1>
-  <span class="badge" id="appBadge">v2.1 샘플 내장</span>
+  <span class="badge" id="appBadge">v1.0 샘플 내장</span>
   <div class="gender-toggle">
     <button class="gender-btn active" id="btnMaleSample" onclick="loadSample('male')">👨 남성 기본 샘플</button>
     <button class="gender-btn" id="btnFemaleSample" onclick="loadSample('female')">👩 여성 기본 샘플</button>
@@ -402,6 +402,7 @@
   <button id="loadBtn" onclick="document.getElementById('fileInput').click()">📂 내 PNG 파일 열기</button>
   <span id="fileInfo">남성 기본 샘플 로드됨</span>
   <span class="spacer"></span>
+  <a href="https://github.com/qotnl111/StardewFarmerPreview" target="_blank" style="color:#f7a858;text-decoration:none;font-size:12px;font-weight:bold;background:#25355c;padding:4px 10px;border-radius:5px;border:1px solid #3b4f80;">⭐ GitHub</a>
   <select class="ctrl-select" id="langSelect" onchange="changeLanguage(this.value)" style="border:1px solid #f7a858;color:#ffdf88;font-weight:bold;">
     <option value="ko">🌐 한국어</option>
     <option value="en">🌐 English</option>
@@ -1705,7 +1706,7 @@ function changeLanguage(lang) {
     const elTitle = document.querySelector('h1'); if (elTitle) elTitle.textContent = t.title;
     const elBadge = document.getElementById('appBadge');
     if (elBadge) {
-      const bMap = { ko: 'v2.1 샘플 내장', en: 'v2.1 Built-in Samples', zh: 'v2.1 内置样本', ja: 'v2.1 サンプル内蔵' };
+      const bMap = { ko: 'v1.0 샘플 내장', en: 'v1.0 Built-in Samples', zh: 'v1.0 内置样本', ja: 'v1.0 サンプル内蔵' };
       elBadge.textContent = bMap[lang] || bMap.ko;
     }
     const elBtnMale = document.getElementById('btnMaleSample'); if (elBtnMale) elBtnMale.textContent = t.male;
