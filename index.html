@@ -339,7 +339,7 @@
     padding: 10px 16px;
     border-radius: 8px;
     border: 1px solid #37466e;
-    max-width: 680px;
+    max-width: 760px;
     width: 100%;
   }
   .wardrobe-group {
@@ -394,7 +394,7 @@
 
 <div id="topbar">
   <h1>🌾 스타듀밸리 농부 모션 뷰어</h1>
-  <span class="badge" id="appBadge">v1.0 샘플 내장</span>
+  <span class="badge" id="appBadge">v1.1 샘플 내장</span>
   <div class="gender-toggle">
     <button class="gender-btn active" id="btnMaleSample" onclick="loadSample('male')">👨 남성 기본 샘플</button>
     <button class="gender-btn" id="btnFemaleSample" onclick="loadSample('female')">👩 여성 기본 샘플</button>
@@ -486,6 +486,23 @@
           <input type="color" id="hairColor" value="#854425" onchange="drawFrame()" title="헤어 색상 선택">
           <button class="custom-file-btn" onclick="document.getElementById('hairFileInput').click()" title="커스텀 hairstyles.png 파일 불러오기" id="btnHairCustom">커스텀</button>
           <input type="file" id="hairFileInput" accept="image/png" style="display:none" onchange="loadCustomHair(this)">
+        </div>
+
+        <!-- 헤어 오프셋 튜닝 (Sprite Sheet Extender 연동) -->
+        <div class="wardrobe-group" style="background:#131c30;border-color:#364d78;">
+          <span style="font-weight:bold;color:#f7a858;" id="txtHairOffset">헤어 오프셋</span>
+          <span style="color:#a0a6b8;font-size:11px;">X:</span>
+          <button class="custom-file-btn" onclick="adjustHairOffset(-1, 0)" style="min-width:18px;">-</button>
+          <span id="hairOffXVal" style="font-size:11px;color:#42d4f4;min-width:14px;text-align:center;">0</span>
+          <button class="custom-file-btn" onclick="adjustHairOffset(1, 0)" style="min-width:18px;">+</button>
+
+          <span style="color:#a0a6b8;font-size:11px;margin-left:4px;">Y:</span>
+          <button class="custom-file-btn" onclick="adjustHairOffset(0, -1)" style="min-width:18px;">-</button>
+          <span id="hairOffYVal" style="font-size:11px;color:#42d4f4;min-width:14px;text-align:center;">0</span>
+          <button class="custom-file-btn" onclick="adjustHairOffset(0, 1)" style="min-width:18px;">+</button>
+
+          <button class="custom-file-btn" onclick="copyHairOffset()" id="btnCopyOffset" style="background:#20406b;color:#aee1ff;font-weight:bold;border-color:#3b69a8;" title="[X, Y] 클립보드 복사">📋 [0, 0]</button>
+          <button class="custom-file-btn" onclick="resetHairOffset()" id="btnResetOffset" style="background:#2a2436;color:#c9a4e8;border-color:#4e3d66;" title="오프셋 초기화">리셋</button>
         </div>
 
         <!-- 바지 -->
@@ -1021,6 +1038,8 @@ function toggleLayer(which) {
 // ─────────────────────────────────────────────────────────────
 let showHair = true;
 let hairStyleIndex = 0; // 0..55 (1번 ~ 56번)
+let customHairOffsetX = 0;
+let customHairOffsetY = 0;
 let imgHair = new Image();
 imgHair.src = SAMPLE_HAIRSTYLES;
 
@@ -1028,8 +1047,45 @@ function toggleHair(val) { showHair = val; drawFrame(); }
 
 function stepHair(dir) {
   hairStyleIndex = (hairStyleIndex + dir + 56) % 56;
-  document.getElementById('hairLabel').textContent = (hairStyleIndex + 1) + '번';
+  updateHairLabelUI();
   drawFrame();
+}
+
+function adjustHairOffset(dx, dy) {
+  customHairOffsetX += dx;
+  customHairOffsetY += dy;
+  updateHairOffsetUI();
+  drawFrame();
+}
+
+function resetHairOffset() {
+  customHairOffsetX = 0;
+  customHairOffsetY = 0;
+  updateHairOffsetUI();
+  drawFrame();
+}
+
+function updateHairOffsetUI() {
+  const elX = document.getElementById('hairOffXVal');
+  const elY = document.getElementById('hairOffYVal');
+  const elBtn = document.getElementById('btnCopyOffset');
+  if (elX) elX.textContent = (customHairOffsetX > 0 ? '+' : '') + customHairOffsetX;
+  if (elY) elY.textContent = (customHairOffsetY > 0 ? '+' : '') + customHairOffsetY;
+  if (elBtn) elBtn.textContent = `📋 [${customHairOffsetX}, ${customHairOffsetY}]`;
+}
+
+function copyHairOffset() {
+  const val = `[${customHairOffsetX}, ${customHairOffsetY}]`;
+  navigator.clipboard.writeText(val).then(() => {
+    const elBtn = document.getElementById('btnCopyOffset');
+    if (elBtn) {
+      const orig = elBtn.textContent;
+      elBtn.textContent = '✅ Copied!';
+      setTimeout(() => { updateHairOffsetUI(); }, 1200);
+    }
+  }).catch(() => {
+    prompt('Copy hair offset:', val);
+  });
 }
 
 function loadCustomHair(input) {
@@ -1181,6 +1237,8 @@ const I18N = {
     "legendBody": "몸통",
     "legendArm": "팔",
     "hair": "💇 헤어",
+    "hairOffset": "헤어 오프셋",
+    "resetOffset": "리셋",
     "hairPrefix": "",
     "hairSuffix": "번",
     "pants": "👖 바지",
@@ -1313,6 +1371,8 @@ const I18N = {
     "legendBody": "Body",
     "legendArm": "Arms",
     "hair": "💇 Hair",
+    "hairOffset": "Hair Offset",
+    "resetOffset": "Reset",
     "hairPrefix": "#",
     "hairSuffix": "",
     "pants": "👖 Pants",
@@ -1445,6 +1505,8 @@ const I18N = {
     "legendBody": "身体",
     "legendArm": "手臂",
     "hair": "💇 发型",
+    "hairOffset": "发型偏移",
+    "resetOffset": "重置",
     "hairPrefix": "第",
     "hairSuffix": "款",
     "pants": "👖 裤子",
@@ -1577,6 +1639,8 @@ const I18N = {
     "legendBody": "胴体",
     "legendArm": "腕",
     "hair": "💇 髪型",
+    "hairOffset": "髪型オフセット",
+    "resetOffset": "リセット",
     "hairPrefix": "",
     "hairSuffix": "番",
     "pants": "👖 ズボン",
@@ -1707,7 +1771,7 @@ function changeLanguage(lang) {
     const elTitle = document.querySelector('h1'); if (elTitle) elTitle.textContent = t.title;
     const elBadge = document.getElementById('appBadge');
     if (elBadge) {
-      const bMap = { ko: 'v1.0 샘플 내장', en: 'v1.0 Built-in Samples', zh: 'v1.0 内置样本', ja: 'v1.0 サンプル内蔵' };
+      const bMap = { ko: 'v1.1 샘플 내장', en: 'v1.1 Built-in Samples', zh: 'v1.1 内置样本', ja: 'v1.1 サンプル内蔵' };
       elBadge.textContent = bMap[lang] || bMap.ko;
     }
     const elBtnMale = document.getElementById('btnMaleSample'); if (elBtnMale) elBtnMale.textContent = t.male;
@@ -1733,7 +1797,10 @@ function changeLanguage(lang) {
     // 4. Wardrobe Labels (Hair, Pants, Shirt)
     const elTxtHair = document.getElementById('txtHair'); if (elTxtHair) elTxtHair.textContent = t.hair;
     const elBtnHair = document.getElementById('btnHairCustom'); if (elBtnHair) elBtnHair.textContent = t.custom;
+    const elTxtHairOff = document.getElementById('txtHairOffset'); if (elTxtHairOff) elTxtHairOff.textContent = t.hairOffset || '헤어 오프셋';
+    const elBtnResetOff = document.getElementById('btnResetOffset'); if (elBtnResetOff) elBtnResetOff.textContent = t.resetOffset || '리셋';
     updateHairLabelUI();
+    updateHairOffsetUI();
 
     const elTxtPants = document.getElementById('txtPants'); if (elTxtPants) elTxtPants.textContent = t.pants;
     const elBtnPants = document.getElementById('btnPantsCustom'); if (elBtnPants) elBtnPants.textContent = t.customFile;
@@ -1784,14 +1851,18 @@ function drawFrame() {
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // 1) 바닐라 6-컬럼 블록 그리드 좌표 계산
+  // 1) 바닐라 6-컬럼 블록 그리드 좌표 계산 (HD/확장 해상도 비율 자동 감지: 바닐라 288px 기준)
+  const imgScale = (img && img.width > 0) ? Math.max(1, Math.round(img.width / 288)) : 1;
   const colInBlock = f.f % COLS_PER_BLOCK;
   const row = Math.floor(f.f / COLS_PER_BLOCK);
 
-  const bodySX = colInBlock * FRAME_W;
-  const bodySY = row * FRAME_H;
-  const armSX = (colInBlock + f.arm) * FRAME_W;
-  const armSY = row * FRAME_H;
+  const bodySX = colInBlock * FRAME_W * imgScale;
+  const bodySY = row * FRAME_H * imgScale;
+  const bodySW = FRAME_W * imgScale;
+  const bodySH = FRAME_H * imgScale;
+
+  const armSX = (colInBlock + f.arm) * FRAME_W * imgScale;
+  const armSY = row * FRAME_H * imgScale;
 
   const drawX = (8 + (f.xOff || 0)) * zoom;
   const drawY = (6 + (f.posOff || 0)) * zoom;
@@ -1816,9 +1887,9 @@ function drawFrame() {
     if (f.flip) {
       ctx.translate(drawX + drawW, drawY);
       ctx.scale(-1, 1);
-      ctx.drawImage(img, bodySX, bodySY, FRAME_W, FRAME_H, 0, 0, drawW, drawH);
+      ctx.drawImage(img, bodySX, bodySY, bodySW, bodySH, 0, 0, drawW, drawH);
     } else {
-      ctx.drawImage(img, bodySX, bodySY, FRAME_W, FRAME_H, drawX, drawY, drawW, drawH);
+      ctx.drawImage(img, bodySX, bodySY, bodySW, bodySH, drawX, drawY, drawW, drawH);
     }
     ctx.restore();
   }
@@ -1920,18 +1991,19 @@ function drawFrame() {
     hCtx.globalCompositeOperation = 'destination-in';
     hCtx.drawImage(imgHair, hBaseX, hSrcY, FRAME_W, FRAME_H, 0, 0, FRAME_W, FRAME_H);
 
-    // 바닐라 헤어 오프셋 계산
+    // 바닐라 헤어 오프셋 계산 + 커스텀 오프셋(customHairOffsetX, customHairOffsetY) 연동
     const isMale = (gender === 'male');
     const genderHairOffset = (isMale && hairStyleIndex >= 16) ? -1 : ((!isMale && hairStyleIndex < 16) ? 1 : 0);
-    const hOffY = num4 + genderHairOffset + (facing === 0 ? 1 : 0);
+    const hOffX = num3 + customHairOffsetX;
+    const hOffY = num4 + genderHairOffset + (facing === 0 ? 1 : 0) + customHairOffsetY;
 
     ctx.save();
     if (isLeft) {
       ctx.translate(drawX + drawW, drawY);
       ctx.scale(-1, 1);
-      ctx.drawImage(hCanvas, 0, 0, FRAME_W, FRAME_H, num3 * zoom, hOffY * zoom, drawW, drawH);
+      ctx.drawImage(hCanvas, 0, 0, FRAME_W, FRAME_H, hOffX * zoom, hOffY * zoom, drawW, drawH);
     } else {
-      ctx.drawImage(hCanvas, 0, 0, FRAME_W, FRAME_H, drawX + num3 * zoom, drawY + hOffY * zoom, drawW, drawH);
+      ctx.drawImage(hCanvas, 0, 0, FRAME_W, FRAME_H, drawX + hOffX * zoom, drawY + hOffY * zoom, drawW, drawH);
     }
     ctx.restore();
   }
@@ -1942,9 +2014,9 @@ function drawFrame() {
     if (f.flip) {
       ctx.translate(drawX + drawW, drawY);
       ctx.scale(-1, 1);
-      ctx.drawImage(img, armSX, armSY, FRAME_W, FRAME_H, 0, 0, drawW, drawH);
+      ctx.drawImage(img, armSX, armSY, bodySW, bodySH, 0, 0, drawW, drawH);
     } else {
-      ctx.drawImage(img, armSX, armSY, FRAME_W, FRAME_H, drawX, drawY, drawW, drawH);
+      ctx.drawImage(img, armSX, armSY, bodySW, bodySH, drawX, drawY, drawW, drawH);
     }
     ctx.restore();
   }
@@ -2114,6 +2186,15 @@ function setGender(g) {
 
 document.addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+
+  // Shift + 방향키: 헤어 오프셋 실시간 1px 미세 조정
+  if (e.shiftKey) {
+    if (e.code === 'ArrowLeft') { e.preventDefault(); adjustHairOffset(-1, 0); return; }
+    if (e.code === 'ArrowRight') { e.preventDefault(); adjustHairOffset(1, 0); return; }
+    if (e.code === 'ArrowUp') { e.preventDefault(); adjustHairOffset(0, -1); return; }
+    if (e.code === 'ArrowDown') { e.preventDefault(); adjustHairOffset(0, 1); return; }
+  }
+
   if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
   if (e.code === 'ArrowRight') { e.preventDefault(); stepFrame(1); }
   if (e.code === 'ArrowLeft') { e.preventDefault(); stepFrame(-1); }

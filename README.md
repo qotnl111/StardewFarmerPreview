@@ -6,7 +6,7 @@ A lightweight, standalone web-based previewer for Stardew Valley farmer sprites 
 
 스타듀밸리 파머(플레이어) 리텍스쳐 제작자를 위한 단일 HTML 웹 프리뷰어입니다. 게임을 켜지 않고도 브라우저에서 58종의 모션과 도트 1픽셀의 어긋남을 즉시 검수할 수 있습니다.
 
-- **Version**: `v1.0.0`
+- **Version**: `v1.1.0`
 - **Supported Languages**: English, 한국어, 中文, 日本語
 
 ---
@@ -20,6 +20,8 @@ A lightweight, standalone web-based previewer for Stardew Valley farmer sprites 
 
 ### 2. Key Features
 - **Accurate Layering Engine**: Faithfully replicates vanilla drawing order (`Body Base` $\rightarrow$ `Pants` $\rightarrow$ `Shirts` $\rightarrow$ `Eyes` $\rightarrow$ `Hair`).
+- **Real-Time Hair X/Y Offset Nudge & Copy**: Fine-tune hair position in real-time (+/- buttons or `Shift + Arrow keys`) and copy config values (e.g. `[1, 0]`) with 1-click—ideal for *Sprite Sheet Extender* custom poses!
+- **Auto HD Texture Scaling**: Automatically detects high-resolution farmer base sprite sheets (2x, 4x, etc.).
 - **Custom Texture Drag & Drop**: Simply drag and drop your custom `farmer_base.png`, `hairstyles.png`, `shirts.png`, or `pants.png` onto the previewer.
 - **58 Complete Animations**: Walking, running, tool swinging, watering, fishing (casting/reeling), weapon attacks, harvesting, eating, emotes, and more.
 - **Pixel Art Toolset**:
@@ -42,6 +44,8 @@ A lightweight, standalone web-based previewer for Stardew Valley farmer sprites 
 
 ### 2. 주요 기능
 - **완벽한 레이어 합성 엔진**: 바닐라 스타듀밸리의 드로잉 순서(`신체 베이스` $\rightarrow$ `바지` $\rightarrow$ `셔츠` $\rightarrow$ `눈동자` $\rightarrow$ `헤어`)를 충실히 구현.
+- **실시간 헤어 X/Y 오프셋 미세조정 & 원클릭 복사**: `+/-` 버튼 및 `Shift + 방향키`로 헤어 위치를 1px 단위로 실시간 조정하고, 설정값(`[1, 0]`)을 원클릭 복사 (*Sprite Sheet Extender* 등 커스텀 포즈 모드 완벽 대응).
+- **고해상도 HD 텍스처 배율 자동 감지**: 2x, 4x 등 고해상도 HD 베이스 시트 자동 지원.
 - **커스텀 파일 드래그 앤 드롭**: 제작 중인 `farmer_base.png`, `hairstyles.png`, `shirts.png`, `pants.png` 이미지를 드래그하여 즉시 테스트.
 - **58종 전방향 모션 완벽 수록**: 기본 이동, 도구 사용, 물주기, 낚시(캐스팅/입질/릴), 무기 공격, 수확, 먹기/마시기, 감정표현 등.
 - **정밀 검수 도구 세트**:
