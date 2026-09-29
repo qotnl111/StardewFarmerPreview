@@ -2,11 +2,11 @@
 
 > **[🌐 Try Live Web Version (웹에서 바로 실행하기)](https://qotnl111.github.io/StardewFarmerPreview/)**
 
-A lightweight, standalone web-based previewer for Stardew Valley farmer sprites and textures. Test your custom outfits, hairs, and body textures across all 58 in-game animations without launching the game.
+A lightweight, standalone web-based previewer for Stardew Valley farmer sprites and NPC textures. Test your custom outfits, hairs, farmer body sheets, and custom NPC animations (with built-in Abigail sample) without launching the game.
 
-스타듀밸리 파머(플레이어) 리텍스쳐 제작자를 위한 단일 HTML 웹 프리뷰어입니다. 게임을 켜지 않고도 브라우저에서 58종의 모션과 도트 1픽셀의 어긋남을 즉시 검수할 수 있습니다.
+스타듀밸리 파머(플레이어) 및 NPC(마을 주민 & 커스텀 NPC) 리텍스쳐 제작자를 위한 단일 HTML 웹 프리뷰어입니다. 게임을 켜지 않고도 브라우저에서 58종의 파머 모션, 내장된 애비게일 샘플 및 커스텀 NPC 프레임 시퀀스를 1픽셀 오차 없이 즉각 검수할 수 있습니다.
 
-- **Version**: `v1.1.0`
+- **Version**: `v1.2.0`
 - **Supported Languages**: English, 한국어, 中文, 日本語
 
 ---
@@ -21,7 +21,10 @@ A lightweight, standalone web-based previewer for Stardew Valley farmer sprites 
 ### 2. Key Features
 - **Accurate Layering Engine**: Faithfully replicates vanilla drawing order (`Body Base` $\rightarrow$ `Pants` $\rightarrow$ `Shirts` $\rightarrow$ `Eyes` $\rightarrow$ `Hair`).
 - **Real-Time Hair X/Y Offset Nudge & Copy**: Fine-tune hair position in real-time (+/- buttons or `Shift + Arrow keys`) and copy config values (e.g. `[1, 0]`) with 1-click—ideal for *Sprite Sheet Extender* custom poses!
-- **Auto HD Texture Scaling**: Automatically detects high-resolution farmer base sprite sheets (2x, 4x, etc.).
+- **NPC Mode & Built-in Abigail Sample**: Switch seamlessly to NPC Mode with the built-in Abigail sprite sheet (64x448, 56 frames) supporting walking (4 directions), idle, flute playing, wedding dresses, sword combat, and more.
+- **Custom NPC Frame Sequencer**: Inspect any custom NPC motion by typing frame numbers (e.g. `16, 17, 18, 19` or `16-19`) with custom speed and horizontal flip (Flip X).
+- **Interactive Spritesheet Minimap**: Click any frame on the minimap to preview it immediately, or Shift+click to append frames to your custom sequence.
+- **Auto HD Texture Scaling**: Automatically detects high-resolution farmer base sprite sheets (2x, 4x, etc.) and HD NPC sheets.
 - **Custom Texture Drag & Drop**: Simply drag and drop your custom `farmer_base.png`, `hairstyles.png`, `shirts.png`, or `pants.png` onto the previewer.
 - **58 Complete Animations**: Walking, running, tool swinging, watering, fishing (casting/reeling), weapon attacks, harvesting, eating, emotes, and more.
 - **Pixel Art Toolset**:
@@ -45,8 +48,11 @@ A lightweight, standalone web-based previewer for Stardew Valley farmer sprites 
 ### 2. 주요 기능
 - **완벽한 레이어 합성 엔진**: 바닐라 스타듀밸리의 드로잉 순서(`신체 베이스` $\rightarrow$ `바지` $\rightarrow$ `셔츠` $\rightarrow$ `눈동자` $\rightarrow$ `헤어`)를 충실히 구현.
 - **실시간 헤어 X/Y 오프셋 미세조정 & 원클릭 복사**: `+/-` 버튼 및 `Shift + 방향키`로 헤어 위치를 1px 단위로 실시간 조정하고, 설정값(`[1, 0]`)을 원클릭 복사 (*Sprite Sheet Extender* 등 커스텀 포즈 모드 완벽 대응).
-- **고해상도 HD 텍스처 배율 자동 감지**: 2x, 4x 등 고해상도 HD 베이스 시트 자동 지원.
-- **커스텀 파일 드래그 앤 드롭**: 제작 중인 `farmer_base.png`, `hairstyles.png`, `shirts.png`, `pants.png` 이미지를 드래그하여 즉시 테스트.
+- **NPC 전용 모드 & 애비게일 기본 샘플 탑재**: 상단 원클릭 전환으로 애비게일(Abigail) 56프레임 시트 내장. 4방향 걷기, 서기, 피리 연주, 웨딩 드레스, 검술 모션 즉각 검수.
+- **커스텀 NPC 프레임 시퀀서**: 모더가 원하는 프레임 번호(예: `16, 17, 18, 19` 또는 `16-19`)를 직접 입력하고 속도 및 좌우 반전을 지정하여 자유롭게 연속 루프 재생.
+- **인터랙티브 미니맵 & 프레임 픽커**: 시트 미니맵의 원하는 프레임을 클릭하면 즉시 단일 검수, Shift+클릭 시 커스텀 시퀀스에 자동 추가.
+- **고해상도 HD 텍스처 배율 자동 감지**: 파머 2x, 4x 및 NPC HD 시트 배율 자동 감지 및 렌더링.
+- **커스텀 파일 드래그 앤 드롭**: 제작 중인 `farmer_base.png` 및 `Abigail.png` 등 모든 커스텀 NPC 스프라이트시트를 드래그하여 즉시 테스트 (자동 규격 감지).
 - **58종 전방향 모션 완벽 수록**: 기본 이동, 도구 사용, 물주기, 낚시(캐스팅/입질/릴), 무기 공격, 수확, 먹기/마시기, 감정표현 등.
 - **정밀 검수 도구 세트**:
   - 2x ~ 10x 픽셀 확대 (Nearest-Neighbor)
