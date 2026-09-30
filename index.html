@@ -471,6 +471,7 @@
   </div>
   <div class="gender-toggle" id="npcSampleGroup" style="display:none;">
     <button class="gender-btn active" id="btnNpcSampleAbi" onclick="loadNpcSample('abigail')">🔮 애비게일 샘플</button>
+    <button class="gender-btn" id="btnNpcCustomLoad" onclick="document.getElementById('fileInput').click()">📂 커스텀 NPC 파일 열기</button>
   </div>
   <button id="loadBtn" onclick="document.getElementById('fileInput').click()">📂 내 PNG 파일 열기</button>
   <span id="fileInfo">남성 기본 샘플 로드됨</span>
@@ -627,7 +628,8 @@
           <button class="custom-file-btn" onclick="clearNpcCustomFrames()" title="프레임 입력창 비우기" id="btnNpcClear">지우기</button>
         </div>
         <div class="npc-group">
-          <span style="color:#a0a6b8;" id="txtNpcInfo">시트 규격:</span>
+          <button class="custom-file-btn" onclick="document.getElementById('fileInput').click()" style="background:#2563eb;color:#fff;font-weight:bold;padding:5px 12px;font-size:12px;border-color:#3b82f6;" id="btnNpcUpload">📂 내 NPC PNG 불러오기</button>
+          <span style="color:#a0a6b8;margin-left:4px;" id="txtNpcInfo">시트 규격:</span>
           <span id="npcSheetInfoText" style="color:#42d4f4;font-weight:bold;">16×32px (64×448px, 14행 56프레임)</span>
         </div>
       </div>
@@ -985,6 +987,7 @@ function switchMode(mode) {
 
   updateDropzoneHint();
   updateLegendUI();
+  updateLoadBtnText();
 
   if (mode === 'npc') {
     if (!npcImg) {
@@ -1013,6 +1016,17 @@ function switchMode(mode) {
       drawSheet();
       selectAnim(currentAnim && !currentAnim.isNpc ? currentAnim.id : 'walkDown');
     }
+  }
+}
+
+function updateLoadBtnText() {
+  const t = I18N[currentLangCode] || I18N.ko;
+  const btn = document.getElementById('loadBtn');
+  if (!btn) return;
+  if (appMode === 'npc') {
+    btn.textContent = t.openNpcPng || '📂 NPC PNG 열기';
+  } else {
+    btn.textContent = t.openFarmerPng || '📂 파머 PNG 열기';
   }
 }
 
@@ -1111,6 +1125,10 @@ function loadSample(g) {
 function loadNpcSample(name) {
   sampleNpc = name;
   isNpcSampleLoaded = true;
+  const btnAbi = document.getElementById('btnNpcSampleAbi');
+  const btnCustom = document.getElementById('btnNpcCustomLoad');
+  if (btnAbi) btnAbi.classList.add('active');
+  if (btnCustom) btnCustom.classList.remove('active');
   loadNpcImageData(SAMPLE_NPC_ABIGAIL, getNpcSampleName());
 }
 
@@ -1152,6 +1170,10 @@ function loadImageFile(file) {
         switchMode('npc');
       }
       isNpcSampleLoaded = false;
+      const btnAbi = document.getElementById('btnNpcSampleAbi');
+      const btnCustom = document.getElementById('btnNpcCustomLoad');
+      if (btnAbi) btnAbi.classList.remove('active');
+      if (btnCustom) btnCustom.classList.add('active');
       npcImg = i;
       img = i;
       document.getElementById('fileInfo').textContent = `${file.name} (${i.width}×${i.height}px) [NPC]`;
@@ -1553,6 +1575,10 @@ const I18N = {
     "male": "👨 남성 기본 샘플",
     "female": "👩 여성 기본 샘플",
     "openPng": "📂 내 PNG 파일 열기",
+    "openFarmerPng": "📂 파머 PNG 열기",
+    "openNpcPng": "📂 NPC PNG 열기",
+    "customNpcFile": "📂 커스텀 NPC 파일 열기",
+    "uploadNpcBtn": "📂 내 NPC PNG 불러오기",
     "sampleLoaded": "남성 기본 샘플 로드됨",
     "hintDesc": "남/녀 기본 샘플 언제든 전환 가능 · 커스텀 PNG 드롭 지원",
     "dropTitle": "📷 farmer_base.png 를 여기에 드롭하세요",
