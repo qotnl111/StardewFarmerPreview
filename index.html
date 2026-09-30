@@ -456,7 +456,7 @@
 </style>
 </head>
 <body>
-<input type="file" id="fileInput" accept="image/png,image/webp" style="display:none">
+<input type="file" id="fileInput" accept="image/png,image/webp,.xnb" style="display:none">
 
 <div id="topbar">
   <h1>🌾 스타듀밸리 농부 모션 뷰어</h1>
@@ -476,6 +476,8 @@
   <button id="loadBtn" onclick="document.getElementById('fileInput').click()">📂 내 PNG 파일 열기</button>
   <span id="fileInfo">남성 기본 샘플 로드됨</span>
   <span class="spacer"></span>
+  <button id="btnExportXnb" class="custom-file-btn" onclick="downloadCurrentAsXnb()" style="background:#5a3825;color:#ffdf88;border-color:#8f5c35;font-weight:bold;padding:5px 12px;font-size:12px;" title="현재 이미지를 스타듀밸리 호환 .xnb 파일로 내보내기">💾 XNB 내보내기</button>
+  <button id="btnExportPng" class="custom-file-btn" onclick="downloadCurrentAsPng()" style="background:#1d4a35;color:#b4ffd8;border-color:#327e5a;font-weight:bold;padding:5px 12px;font-size:12px;" title="현재 이미지를 PNG 파일로 다운로드">🖼️ PNG 다운로드</button>
   <a href="https://ko-fi.com/secsky3" target="_blank" style="color:#ff6e6e;text-decoration:none;font-size:12px;font-weight:bold;background:#3d1a24;padding:4px 10px;border-radius:5px;border:1px solid #732a3d;display:flex;align-items:center;gap:4px;">☕ Ko-fi</a>
   <a href="https://github.com/qotnl111/StardewFarmerPreview" target="_blank" style="color:#f7a858;text-decoration:none;font-size:12px;font-weight:bold;background:#25355c;padding:4px 10px;border-radius:5px;border:1px solid #3b4f80;display:flex;align-items:center;gap:4px;">⭐ GitHub</a>
   <select class="ctrl-select" id="langSelect" onchange="changeLanguage(this.value)" style="border:1px solid #f7a858;color:#ffdf88;font-weight:bold;">
@@ -939,6 +941,179 @@ for (let r = 0; r < 14; r++) {
 // ─────────────────────────────────────────────────────────────
 // 상태 관리
 // ─────────────────────────────────────────────────────────────
+
+// ─────────────────────────────────────────────────────────────
+// [XNB 코덱] 스타듀밸리 표준 Texture2D 비압축 XNB 인코더 & 디코더
+// ─────────────────────────────────────────────────────────────
+function encode7Bit(n) {
+  const bytes = [];
+  while (n >= 0x80) {
+    bytes.push((n & 0x7F) | 0x80);
+    n >>= 7;
+  }
+  bytes.push(n & 0x7F);
+  return bytes;
+}
+
+function encodeTexture2DXnb(width, height, rgbaUint8Array) {
+  const readerName = "Microsoft.Xna.Framework.Content.Texture2DReader, Microsoft.Xna.Framework.Graphics, Version=4.0.0.0, Culture=neutral, PublicKeyToken=842cf8be1de50553";
+  const readerNameBytes = [];
+  for (let i = 0; i < readerName.length; i++) readerNameBytes.push(readerName.charCodeAt(i));
+
+  const bodyParts = [];
+  bodyParts.push(...encode7Bit(1));                      // Reader count = 1
+  bodyParts.push(...encode7Bit(readerNameBytes.length)); // Reader name length
+  bodyParts.push(...readerNameBytes);                    // Reader name
+  bodyParts.push(0, 0, 0, 0);                            // Reader version = 0 (Int32 LE)
+  bodyParts.push(...encode7Bit(0));                      // Shared resources = 0
+  bodyParts.push(...encode7Bit(1));                      // Primary object type index = 1
+
+  // Texture2D: SurfaceFormat=0 (Color), Width, Height, MipCount=1
+  const t2dHeader = new Uint8Array(16);
+  const t2dView = new DataView(t2dHeader.buffer);
+  t2dView.setInt32(0, 0, true);
+  t2dView.setInt32(4, width, true);
+  t2dView.setInt32(8, height, true);
+  t2dView.setInt32(12, 1, true);
+  bodyParts.push(...t2dHeader);
+
+  // Level 0 size
+  const dataLenHeader = new Uint8Array(4);
+  const dataLenView = new DataView(dataLenHeader.buffer);
+  dataLenView.setInt32(0, rgbaUint8Array.length, true);
+  bodyParts.push(...dataLenHeader);
+
+  const totalFileSize = 10 + bodyParts.length + rgbaUint8Array.length;
+  const header = new Uint8Array(10);
+  header[0] = 0x58; // 'X'
+  header[1] = 0x4E; // 'N'
+  header[2] = 0x42; // 'B'
+  header[3] = 0x77; // 'w' (Windows)
+  header[4] = 0x05; // version 5 (XNA 4.0 / MonoGame)
+  header[5] = 0x00; // flags: 0 (uncompressed)
+  const headerView = new DataView(header.buffer);
+  headerView.setUint32(6, totalFileSize, true);
+
+  const result = new Uint8Array(totalFileSize);
+  result.set(header, 0);
+  result.set(new Uint8Array(bodyParts), 10);
+  result.set(rgbaUint8Array, 10 + bodyParts.length);
+  return result;
+}
+
+function decodeTexture2DXnb(arrayBuffer) {
+  const bytes = new Uint8Array(arrayBuffer);
+  const view = new DataView(arrayBuffer);
+
+  if (bytes.length < 10) throw new Error("파일 크기가 너무 작습니다 (유효하지 않은 XNB).");
+  const magic = String.fromCharCode(bytes[0], bytes[1], bytes[2]);
+  if (magic !== "XNB") throw new Error("XNB 파일 헤더가 일치하지 않습니다 (Magic: " + magic + ").");
+
+  const flags = bytes[5];
+  if (flags & 0x01) {
+    throw new Error("COMPRESSED_LZX");
+  }
+
+  let offset = 10;
+  function read7Bit() {
+    let res = 0, shift = 0;
+    while (true) {
+      if (offset >= bytes.length) throw new Error("비정상적인 XNB 데이터 형식입니다.");
+      const b = bytes[offset++];
+      res |= (b & 0x7F) << shift;
+      if ((b & 0x80) === 0) break;
+      shift += 7;
+    }
+    return res;
+  }
+
+  const readerCount = read7Bit();
+  if (readerCount < 1) throw new Error("Type Reader를 찾을 수 없습니다.");
+
+  for (let i = 0; i < readerCount; i++) {
+    const nameLen = read7Bit();
+    offset += nameLen; // skip type name
+    offset += 4;       // skip reader version
+  }
+
+  read7Bit(); // shared resource count
+  read7Bit(); // primary obj type
+
+  if (offset + 20 > bytes.length) throw new Error("Texture2D 데이터가 손상되었습니다.");
+  const surfaceFormat = view.getInt32(offset, true);
+  const width = view.getInt32(offset + 4, true);
+  const height = view.getInt32(offset + 8, true);
+  offset += 16;
+
+  const dataSize = view.getInt32(offset, true);
+  offset += 4;
+
+  if (surfaceFormat !== 0) {
+    throw new Error("지원하지 않는 텍스처 포맷입니다 (Format ID: " + surfaceFormat + "). 32-bit Color 포맷만 지원합니다.");
+  }
+
+  const rawPixels = bytes.subarray(offset, offset + dataSize);
+  return { width, height, data: rawPixels };
+}
+
+function downloadCurrentAsXnb() {
+  if (!img) {
+    alert("내보낼 이미지가 없습니다.");
+    return;
+  }
+  const c = document.createElement("canvas");
+  c.width = img.width;
+  c.height = img.height;
+  const cCtx = c.getContext("2d");
+  cCtx.imageSmoothingEnabled = false;
+  cCtx.drawImage(img, 0, 0);
+
+  const imgData = cCtx.getImageData(0, 0, img.width, img.height);
+  const xnbBytes = encodeTexture2DXnb(img.width, img.height, new Uint8Array(imgData.data.buffer));
+
+  const blob = new Blob([xnbBytes], { type: "application/octet-stream" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  let fileName = (appMode === "npc") 
+    ? (sampleNpc === "abigail" && isNpcSampleLoaded ? "Abigail.xnb" : "CustomNPC.xnb")
+    : (gender === "female" ? "farmer_girl_base.xnb" : "farmer_base.xnb");
+  if (img.name) {
+    fileName = img.name.replace(/\.[^/.]+$/, "") + ".xnb";
+  }
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function downloadCurrentAsPng() {
+  if (!img) {
+    alert("내보낼 이미지가 없습니다.");
+    return;
+  }
+  const c = document.createElement("canvas");
+  c.width = img.width;
+  c.height = img.height;
+  const cCtx = c.getContext("2d");
+  cCtx.imageSmoothingEnabled = false;
+  cCtx.drawImage(img, 0, 0);
+
+  let fileName = (appMode === "npc") 
+    ? (sampleNpc === "abigail" && isNpcSampleLoaded ? "Abigail.png" : "CustomNPC.png")
+    : (gender === "female" ? "farmer_girl_base.png" : "farmer_base.png");
+  if (img.name) {
+    fileName = img.name.replace(/\.[^/.]+$/, "") + ".png";
+  }
+  const a = document.createElement("a");
+  a.href = c.toDataURL("image/png");
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
 let appMode = 'farmer'; // 'farmer' | 'npc'
 let img = null;
 let farmerImg = null;
@@ -1153,64 +1328,100 @@ function loadNpcImageData(src, name) {
 }
 
 function loadImageFile(file) {
-  if (!file || !file.type.startsWith('image/')) return;
+  if (!file) return;
   const fn = file.name.toLowerCase();
+  const isXnb = fn.endsWith('.xnb');
+  if (!file.type.startsWith('image/') && !isXnb) return;
+
+  if (isXnb) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const decoded = decodeTexture2DXnb(e.target.result);
+        const c = document.createElement('canvas');
+        c.width = decoded.width;
+        c.height = decoded.height;
+        const cCtx = c.getContext('2d');
+        const imgData = cCtx.createImageData(decoded.width, decoded.height);
+        imgData.data.set(decoded.data);
+        cCtx.putImageData(imgData, 0, 0);
+
+        const imgObj = new Image();
+        imgObj.onload = () => {
+          imgObj.name = file.name;
+          processLoadedImage(imgObj, file.name);
+        };
+        imgObj.src = c.toDataURL('image/png');
+      } catch (err) {
+        if (err.message === 'COMPRESSED_LZX') {
+          const t = I18N[currentLangCode] || I18N.ko;
+          alert(t.lzxAlert || '이 XNB 파일은 스타듀밸리 바닐라 LZX 압축 파일입니다.\n\n현재 웹 프리뷰어는 [비압축 XNB] 및 [PNG] 파일을 지원합니다.\n* PNG 파일을 넣으시면 스타듀밸리 호환 XNB 파일로 즉시 변환하여 다운로드하실 수 있습니다.');
+        } else {
+          alert('XNB 파일을 읽는 중 오류가 발생했습니다: ' + err.message);
+        }
+      }
+    };
+    reader.readAsArrayBuffer(file);
+    return;
+  }
   const url = URL.createObjectURL(file);
   const i = new Image();
   i.onload = () => {
     URL.revokeObjectURL(url);
     i.name = file.name;
-
-    // 규격 및 파일명 기반 스마트 감지:
-    // 가로 폭이 64의 배수이고 (가로가 288 미만이거나 파일명에 npc/abigail/주민 등이 있는 경우) -> NPC 모드 자동 전환!
-    const isLikelyNpc = (i.width % 64 === 0 && (i.width < 288 || fn.includes('npc') || fn.includes('abigail') || fn.includes('villager') || fn.includes('주민') || fn.includes('애비게일')));
-    
-    if (isLikelyNpc) {
-      if (appMode !== 'npc') {
-        switchMode('npc');
-      }
-      isNpcSampleLoaded = false;
-      const btnAbi = document.getElementById('btnNpcSampleAbi');
-      const btnCustom = document.getElementById('btnNpcCustomLoad');
-      if (btnAbi) btnAbi.classList.remove('active');
-      if (btnCustom) btnCustom.classList.add('active');
-      npcImg = i;
-      img = i;
-      document.getElementById('fileInfo').textContent = `${file.name} (${i.width}×${i.height}px) [NPC]`;
-      document.getElementById('dropzone').style.display = 'none';
-      document.getElementById('canvasWrap').style.display = 'flex';
-      document.getElementById('sheetWrap').style.display = 'flex';
-      updateNpcSheetInfoUI();
-      buildSidebar();
-      drawSheet();
-      selectAnim(currentAnim && currentAnim.isNpc ? currentAnim.id : 'npcWalkDown');
-    } else {
-      if (appMode !== 'farmer') {
-        switchMode('farmer');
-      }
-      isSampleLoaded = false;
-      document.getElementById('btnMaleSample').classList.remove('active');
-      document.getElementById('btnFemaleSample').classList.remove('active');
-
-      if (fn.includes('girl') || fn.includes('female') || fn.includes('woman') || fn.includes('여')) {
-        setGender('female');
-      } else {
-        setGender('male');
-      }
-
-      farmerImg = i;
-      img = i;
-      document.getElementById('fileInfo').textContent = `${file.name} (${i.width}×${i.height}px) [${gender==='female'?'여성 핏':'남성 핏'}]`;
-      document.getElementById('dropzone').style.display = 'none';
-      document.getElementById('canvasWrap').style.display = 'flex';
-      document.getElementById('sheetWrap').style.display = 'flex';
-      buildSidebar();
-      drawSheet();
-      selectAnim(currentAnim && !currentAnim.isNpc ? currentAnim.id : 'walkDown');
-    }
+    processLoadedImage(i, file.name);
   };
   i.onerror = () => alert('이미지 파일을 불러오는 데 실패했습니다.');
   i.src = url;
+}
+
+function processLoadedImage(i, fileName) {
+  const fn = fileName.toLowerCase();
+  const isLikelyNpc = (i.width % 64 === 0 && (i.width < 288 || fn.includes('npc') || fn.includes('abigail') || fn.includes('villager') || fn.includes('주민') || fn.includes('애비게일')));
+  
+  if (isLikelyNpc) {
+    if (appMode !== 'npc') {
+      switchMode('npc');
+    }
+    isNpcSampleLoaded = false;
+    const btnAbi = document.getElementById('btnNpcSampleAbi');
+    const btnCustom = document.getElementById('btnNpcCustomLoad');
+    if (btnAbi) btnAbi.classList.remove('active');
+    if (btnCustom) btnCustom.classList.add('active');
+    npcImg = i;
+    img = i;
+    document.getElementById('fileInfo').textContent = `${fileName} (${i.width}×${i.height}px) [NPC]`;
+    document.getElementById('dropzone').style.display = 'none';
+    document.getElementById('canvasWrap').style.display = 'flex';
+    document.getElementById('sheetWrap').style.display = 'flex';
+    updateNpcSheetInfoUI();
+    buildSidebar();
+    drawSheet();
+    selectAnim(currentAnim && currentAnim.isNpc ? currentAnim.id : 'npcWalkDown');
+  } else {
+    if (appMode !== 'farmer') {
+      switchMode('farmer');
+    }
+    isSampleLoaded = false;
+    document.getElementById('btnMaleSample').classList.remove('active');
+    document.getElementById('btnFemaleSample').classList.remove('active');
+
+    if (fn.includes('girl') || fn.includes('female') || fn.includes('woman') || fn.includes('여')) {
+      setGender('female');
+    } else {
+      setGender('male');
+    }
+
+    farmerImg = i;
+    img = i;
+    document.getElementById('fileInfo').textContent = `${fileName} (${i.width}×${i.height}px) [${gender==='female'?'여성 핏':'남성 핏'}]`;
+    document.getElementById('dropzone').style.display = 'none';
+    document.getElementById('canvasWrap').style.display = 'flex';
+    document.getElementById('sheetWrap').style.display = 'flex';
+    buildSidebar();
+    drawSheet();
+    selectAnim(currentAnim && !currentAnim.isNpc ? currentAnim.id : 'walkDown');
+  }
 }
 
 document.getElementById('fileInput').addEventListener('change', e => {
@@ -1574,7 +1785,10 @@ const I18N = {
     "title": "🌾 스타듀밸리 농부 모션 뷰어",
     "male": "👨 남성 기본 샘플",
     "female": "👩 여성 기본 샘플",
-    "openPng": "📂 내 PNG 파일 열기",
+    "openPng": "📂 내 파일 열기 (PNG/XNB)",
+    "exportXnb": "💾 XNB 내보내기",
+    "exportPng": "🖼️ PNG 다운로드",
+    "lzxAlert": "이 XNB 파일은 스타듀밸리 바닐라 LZX 압축 파일입니다.\n\n현재 웹 프리뷰어는 [비압축 XNB] 및 [PNG] 파일을 지원합니다.\n* PNG 파일을 넣으시면 스타듀밸리 호환 XNB 파일로 즉시 변환하여 다운로드하실 수 있습니다.",
     "openFarmerPng": "📂 파머 PNG 열기",
     "openNpcPng": "📂 NPC PNG 열기",
     "customNpcFile": "📂 커스텀 NPC 파일 열기",
